@@ -5,12 +5,12 @@ from django.shortcuts import render
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import (SessionAuthentication,
                                            TokenAuthentication)
-from rest_framework.decorators import action
+from rest_framework.decorators import action , api_view
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from User.models import Subject, Teacher
-
+from rest_framework import generics
 from .models import MCQ, TR, Question ,Rate
 from .serializers import MCQSerializer, QuestionSeralizer, TRSerializer , RateSerializer
 
@@ -36,22 +36,28 @@ class IsAuther(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         
-        return obj.author == request.user.teacher
+        return obj.question_author == request.user.teacher
         # Check for review auther then return
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    message = 'You are not the Review auther.'
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.author == request.user.teacher
 
 class QuestionViewSet(viewsets.ModelViewSet):
     """Manage Question API"""
     serializer_class = QuestionSeralizer
     queryset = Question.objects.all()
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticated, IsTeacherOrAdminOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated, IsTeacherOrAdminOrReadOnly,IsAuther)
 
-    def get_queryset(self):
-        """retrive the Questions for the authenticated teacher"""
-        if hasattr(self.request.user, 'teacher'):
-            return self.queryset.filter(question_author=self.request.user.teacher)
-        else :
-            return self.queryset
+    # def get_queryset(self):
+    #     """retrive the Questions for the authenticated teacher"""
+    #     if hasattr(self.request.user, 'teacher'):
+    #         return self.queryset.filter(question_author=self.request.user.teacher)
+    #     else :
+    #         return self.queryset
 
     def get_serializer_class(self):
         """override serializer for answer url"""
@@ -61,14 +67,16 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 return MCQSerializer
             elif question_type == 'TR' :
                 return TRSerializer
+        elif self.action == 'add_review':
+            return RateSerializer
         return self.serializer_class
 
     def perform_create(self, serializer):
         """Create a new question"""
         teacher = Teacher.objects.get(user=self.request.user)
-        serializer.save(question_author=teacher,question_id=random.random()*10000)
+        serializer.save(question_author=teacher)
 
-    @action(methods=['POST','PUT','PATCH','GET'], detail=True, url_path='set-answer')
+    @action(methods=['POST','PUT','PATCH','GET'], detail=True, url_path='set-type')
     def set_answer(self, request, pk=None):
         """Upload Answer to question"""
         question = self.get_object()
@@ -94,16 +102,77 @@ class QuestionViewSet(viewsets.ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-class RateViewSet(viewsets.ModelViewSet):
-    """Manage Rate API"""
-    serializer_class = RateSerializer
-    queryset = Rate.objects.all()
-    authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticated, IsTeacherOrAdminOrReadOnly,IsAuther)
+    # @action(methods=['POST','PUT','PATCH',], detail=True, url_path='add_review')
+    # def add_review(self, request, pk=None):
+    #         """Upload Image to recipe"""
+    #         review = self.get_object()
+    #         serializer = self.get_serializer(
+    #             review,
+    #             data=request.data
+    #         )
+    #         if serializer.is_valid():
+    #             serializer.save()
+    #             return Response(
+    #                 serializer.data,
+    #                 status=status.HTTP_200_OK
+    #             )
+    #         return Response(
+    #             serializer.errors,
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
+# class RateViewSet(viewsets.ModelViewSet):
+#     """Manage Rate API"""
+#     serializer_class = RateSerializer
+#     queryset = Rate.objects.all()
+#     authentication_classes = (TokenAuthentication,)
+#     permission_classes = (permissions.IsAuthenticated, IsTeacherOrAdminOrReadOnly,IsAuther)
 
     
 
+#     # def perform_create(self, serializer):
+#     #     """Create a new Rate"""
+#     #     teacher = Teacher.objects.get(user=self.request.user)
+#     #     serializer.save(author=teacher)
+#     @action(methods=['POST'], detail=True, url_path='add-review')
+#     def add_review(self, request, pk=None):
+#         """Upload Image to recipe"""
+#         review = self.get_object()
+#         serializer = self.get_serializer(
+#             review,
+#             data=request.data
+#         )
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(
+#                 serializer.data,
+#                 status=status.HTTP_200_OK
+#             )
+#         return Response(
+#             serializer.errors,
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
+class ReviewList(generics.ListCreateAPIView):
+    queryset = Rate.objects.all()
+    serializer_class = RateSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,IsTeacherOrAdminOrReadOnly)
+    lookup_url_kwarg = 'question_id'
+    
     def perform_create(self, serializer):
-        """Create a new Rate"""
-        teacher = Teacher.objects.get(user=self.request.user)
-        serializer.save(author=teacher)
+        serializer.save(
+            author=Teacher.objects.get(user=self.request.user),
+            question_id=self.kwargs['question_id'])
+    
+    def get_queryset(self):
+        question = self.kwargs['question_id']
+        return Rate.objects.filter(question_id=question)
+
+class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = RateSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,IsTeacherOrAdminOrReadOnly,IsOwnerOrReadOnly)
+    lookup_url_kwarg = 'rate_id'
+
+    def get_queryset(self):
+        review = self.kwargs['rate_id']
+        return Rate.objects.filter(id=review)

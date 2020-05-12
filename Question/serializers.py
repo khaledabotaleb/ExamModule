@@ -14,13 +14,29 @@ class TRSerializer(serializers.ModelSerializer):
         model = TR
         fields = ('question_body', 'question_answer')
 
+class RateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rate
+        fields = ('id','author', 'stars', 'comment','creation_time')
+        read_only_fields = ('id', 'author')
+
+    # def __init__(self, *args, **kwargs):
+    #     super(RateSerializer, self).__init__(*args, **kwargs)
+    #     request_user = self.context['request'].user
+    #     qs = Question.objects.all()
+    #     if hasattr(request_user, 'teacher'):
+    #         qs = qs.exclude(question_author=request_user.teacher)
+    #         self.fields['question'].queryset = qs
+
 class QuestionSeralizer(serializers.ModelSerializer):
     answer = serializers.SerializerMethodField()
+    reviews = RateSerializer(many=True, read_only=True)
+
     class Meta:
         model = Question
-        fields = ('id','question_id', 'question_author', 'question_subject', 'question_type', 'question_real_time', 'question_points',
-                  'question_grade', 'question_level', 'question_educational_type', 'question_subject', 'question_topic','answer')
-        read_only_fields = ('question_id','question_author')
+        fields = ('id', 'question_author', 'question_subject', 'question_type', 'question_real_time', 'question_points',
+                  'question_grade', 'question_level', 'question_educational_type', 'question_subject', 'question_topic','answer','reviews')
+        read_only_fields = ('id','question_author',)
 
     def get_answer(self, obj):
         if obj.question_type == 'TR' and hasattr(obj, 'tr'):
@@ -30,17 +46,7 @@ class QuestionSeralizer(serializers.ModelSerializer):
         else :
             return None
 
-class RateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rate
-        fields = ('id','author','question', 'stars', 'comment','creation_time')
-        read_only_fields = ('id', 'author')
 
-    def __init__(self, *args, **kwargs):
-        super(RateSerializer, self).__init__(*args, **kwargs)
-        request_user = self.context['request'].user
-        qs = Question.objects.all()
-        if hasattr(request_user, 'teacher'):
-            qs = qs.exclude(question_author=request_user.teacher)
-        self.fields['question'].queryset = qs
+
+    
         

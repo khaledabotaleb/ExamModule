@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.text import slugify
 from User.models import User, Teacher ,Subject , ClassRoom
 from PIL import Image
 
@@ -9,7 +10,6 @@ TYPE = (
 )
 
 class Question(models.Model):
-    question_id = models.IntegerField()
     question_type = models.CharField(choices=TYPE, max_length=50)
     question_author = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     question_creation_time = models.DateTimeField(auto_now_add=True)
@@ -21,7 +21,7 @@ class Question(models.Model):
     question_educational_type = models.CharField(max_length=50)
     question_subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
     question_topic = models.CharField(max_length=150)
-
+    
 
 
     def get_answer_object(self):
@@ -68,7 +68,7 @@ class TR(models.Model):
 class Rate(models.Model):
     stars =  models.CharField(max_length=10 , null=False , blank=False )
     comment = models.CharField(max_length=250 , null=True , blank= True)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE,related_name='reviews')
     author = models.ForeignKey(Teacher ,on_delete=models.CASCADE)
     creation_time = models.DateTimeField(auto_now_add=True)
 
