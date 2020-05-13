@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.text import slugify
 from User.models import User, Teacher ,Subject , ClassRoom
 from PIL import Image
-
+from django.core.exceptions import ValidationError
 
 TYPE = (
     ('MCQ' , 'MCQ'),
@@ -72,6 +72,13 @@ class Rate(models.Model):
     author = models.ForeignKey(Teacher ,on_delete=models.CASCADE)
     creation_time = models.DateTimeField(auto_now_add=True)
 
-
+    def clean(self):
+        super().clean()
+        print(self.question.question_author.id)
+        print(self.author.id)
+        if self.author.id == self.question.question_author.id :
+            raise ValidationError('You can\'t review you own question')
     
-
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

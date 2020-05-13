@@ -30,14 +30,21 @@ class IsTeacherOrAdminOrReadOnly(permissions.BasePermission):
                 return True
             else:
                 return False
-class IsAuther(permissions.BasePermission):
-    message = 'You are not the Review auther.'
+
+class custom_per(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
+        u = request.user
         
-        return obj.question_author == request.user.teacher
-        # Check for review auther then return
+        t = Teacher.objects.filter(user=u).exists()   
+        questions = Question.objects.get(question_author=t) 
+        if t :
+            if request.method in permissions.SAFE_METHODS and obj.author != t :
+                return False
+            else:
+                return True
+        else:
+            return False
+
 class IsOwnerOrReadOnly(permissions.BasePermission):
     message = 'You are not the Review auther.'
     def has_object_permission(self, request, view, obj):
@@ -50,7 +57,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSeralizer
     queryset = Question.objects.all()
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticated, IsTeacherOrAdminOrReadOnly,IsAuther)
+    permission_classes = (permissions.IsAuthenticated, IsTeacherOrAdminOrReadOnly)
 
     # def get_queryset(self):
     #     """retrive the Questions for the authenticated teacher"""
@@ -76,6 +83,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         teacher = Teacher.objects.get(user=self.request.user)
         serializer.save(question_author=teacher)
 
+    
     @action(methods=['POST','PUT','PATCH','GET'], detail=True, url_path='set-type')
     def set_answer(self, request, pk=None):
         """Upload Answer to question"""
@@ -155,13 +163,14 @@ class ReviewList(generics.ListCreateAPIView):
     queryset = Rate.objects.all()
     serializer_class = RateSerializer
     authentication_classes = (TokenAuthentication,)
-    permission_classes = (permissions.IsAuthenticated,IsTeacherOrAdminOrReadOnly)
+    permission_classes = (permissions.IsAuthenticated,IsTeacherOrAdminOrReadOnly ,custom_per)
     lookup_url_kwarg = 'question_id'
     
+    
     def perform_create(self, serializer):
-        serializer.save(
-            author=Teacher.objects.get(user=self.request.user),
-            question_id=self.kwargs['question_id'])
+            serializer.save(
+                author=Teacher.objects.get(user=self.request.user),
+                question_id=self.kwargs['question_id'])
     
     def get_queryset(self):
         question = self.kwargs['question_id']

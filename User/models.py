@@ -68,7 +68,7 @@ class Teacher(models.Model):
     class_rooms = models.ManyToManyField(ClassRoom)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     confirm_user = models.CharField(max_length=100)
-    subject = models.ForeignKey(Subject,on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
 
     def set_user(self, user):
         self.user = user
