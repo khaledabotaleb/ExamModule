@@ -35,7 +35,7 @@ class QuestionSeralizer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ('id', 'question_author', 'question_subject', 'question_type', 'question_real_time', 'question_points',
-                  'question_grade', 'question_level', 'question_educational_type', 'question_subject', 'question_topic','answer','reviews')
+                  'question_grade', 'question_level', 'question_educational_type', 'question_topic','answer','reviews')
         read_only_fields = ('id','question_author',)
 
     def get_answer(self, obj):

@@ -16,7 +16,10 @@ from .serializers import MCQSerializer, QuestionSeralizer, TRSerializer , RateSe
 
 # Custom Permissions
 
+#  #############################################################################
+# function here to add question
 
+#  #############################################################################
 class IsTeacherOrAdminOrReadOnly(permissions.BasePermission):
     message = 'Adding Questions not allowed for this account.'
 
@@ -81,6 +84,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create a new question"""
         teacher = Teacher.objects.get(user=self.request.user)
+        subjects = Subject.objects.all()
+
         serializer.save(question_author=teacher)
 
     

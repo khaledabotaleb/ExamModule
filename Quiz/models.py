@@ -6,7 +6,7 @@ from Report.models import ReportStudent, ReportStudentHeadMaster
 class Quiz(models.Model):
     quiz_id = models.IntegerField()
     quiz_headline = models.CharField(max_length=100, null=True, blank=True)
-    quiz_questions = models.ManyToManyField(Question)
+    quiz_questions = models.ManyToManyField(Question , related_name='quiz_questions')
     quiz_author = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     quiz_creation_time = models.DateTimeField(auto_now_add=True)
     quiz_real_time = models.IntegerField()
