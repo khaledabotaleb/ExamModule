@@ -1,18 +1,20 @@
 from django.db import models
 from Question.models import Question, MCQ, TR
-from User.models import Teacher, ClassRoom, Student
+from User.models import Teacher, ClassRoom, Student , Subject
 from Report.models import ReportStudent, ReportStudentHeadMaster
 
 class Quiz(models.Model):
-    quiz_id = models.IntegerField()
+    #quiz_id = models.IntegerField()
     quiz_headline = models.CharField(max_length=100, null=True, blank=True)
-    quiz_questions = models.ManyToManyField(Question , related_name='quiz_questions')
+    quiz_questions = models.ManyToManyField(Question , related_name='quiz_questions' , blank=True)
     quiz_author = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     quiz_creation_time = models.DateTimeField(auto_now_add=True)
-    quiz_real_time = models.IntegerField()
-    quiz_setion_time = models.IntegerField()
+    quiz_real_time = models.IntegerField(null=True)
+    quiz_setion_time = models.IntegerField(null=True)
     quiz_is_launched = models.BooleanField(default=False)
     quiz_class_room = models.ManyToManyField(ClassRoom)
+    quiz_subject = models.ForeignKey(Subject,on_delete=models.CASCADE,null=True)
+
 
 
 class Answers(models.Model):

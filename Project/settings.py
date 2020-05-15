@@ -49,7 +49,7 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASS': [
-        'rest_framework_authentication.TokenAuthenticaton',
+        'rest_framework.authentication.TokenAuthenticaton',
     ]
 }
 

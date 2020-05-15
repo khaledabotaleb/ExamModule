@@ -84,9 +84,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create a new question"""
         teacher = Teacher.objects.get(user=self.request.user)
-        subjects = Subject.objects.all()
-
-        serializer.save(question_author=teacher)
+        question_subject = teacher.subject
+        serializer.save(question_author=teacher,question_subject=question_subject)
 
     
     @action(methods=['POST','PUT','PATCH','GET'], detail=True, url_path='set-type')
@@ -190,3 +189,34 @@ class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         review = self.kwargs['rate_id']
         return Rate.objects.filter(id=review)
+#question review another solution
+class ReviewApiView(APIView):
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticated,IsTeacherOrAdminOrReadOnly ,custom_per)
+    
+
+    def get_object(self , id):
+        try:
+            return Question.objects.get(id=id)
+        except Article.DoesNotExist:
+            return HttpResponse(status=status.HTTP_404_NOT_FOUND)
+
+    def get(self,request,id):
+        reviews = Rate.objects.filter(question_id=id)
+        serializer = RateSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+    def post(self,request,id):
+        author = Teacher.objects.get(user=request.user)
+        question = self.get_object(id)
+        if question.question_author == author:
+            return Response({'response': "you can not review on your question"})
+        else:
+            serializer = RateSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(
+                    author=author,
+                    question = question
+                )
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

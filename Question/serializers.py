@@ -36,7 +36,7 @@ class QuestionSeralizer(serializers.ModelSerializer):
         model = Question
         fields = ('id', 'question_author', 'question_subject', 'question_type', 'question_real_time', 'question_points',
                   'question_grade', 'question_level', 'question_educational_type', 'question_topic','answer','reviews')
-        read_only_fields = ('id','question_author',)
+        read_only_fields = ('id','question_author','question_subject')
 
     def get_answer(self, obj):
         if obj.question_type == 'TR' and hasattr(obj, 'tr'):
